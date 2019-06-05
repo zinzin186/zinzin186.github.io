@@ -1,6 +1,24 @@
 const socket = io('https://zinzinwebrtc.herokuapp.com/');
 $('#div-chat').hide();
+let customConfig;
 
+$.ajax({
+  url: "https://service.xirsys.com/ice",
+  data: {
+    ident: "vudinhdin",
+    secret: "80d08a4c-8742-11e9-ae3c-0242ac110007",
+    domain: "zinzin186.github.io",
+    application: "default",
+    room: "default",
+    secure: 1
+  },
+  success: function (data, status) {
+    // data.d is where the iceServers object lives
+    customConfig = data.d;
+    console.log(customConfig);
+  },
+  async: false
+});
 socket.on('DANH_SACH_ONLINE', arrUserInfo => {
     $('#div-chat').show();
     $('#div-dang-ky').hide();
@@ -33,8 +51,15 @@ function playStream(idVideoTag, stream){
 
 // openStream()
 // .then(stream => playStream('localStream', stream))
+// const peer = new Peer({ 
+//     key: 'peerjs', 
+// });
 const peer = new Peer({ 
     key: 'peerjs', 
+    host: 'zinzinwebrtc.herokuapp.com', 
+    secure: true, 
+    port: 443, 
+    config: customConfig 
 });
 peer.on('open', id => {
     $('#my-peer').append(id);
