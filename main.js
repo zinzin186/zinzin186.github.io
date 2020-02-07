@@ -39,7 +39,7 @@ socket.on('DANH_SACH_ONLINE', arrUserInfo => {
 });
 socket.on('DANG_KY_THAT_BAI', () => alert('Username da co nguoi su dung, vui long chon ten khac'));
 function openStream(){
-    const config = {audio: false, video: true};
+    const config = {audio: true, video: true};
     return navigator.mediaDevices.getUserMedia(config);
 }
 
