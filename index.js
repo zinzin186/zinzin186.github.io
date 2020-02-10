@@ -112,35 +112,37 @@ socket.on("remove-user", ({ socketId }) => {
 });
 
 socket.on("call-made", async data => {
-  showConfirm(data);
-  // if (getCalled) {
-  //   // console.log("confirmed");
-  //   // const confirmed = confirm(
-  //   //   `User "Socket: ${data.socket}" wants to call you. Do accept this call?`
-  //   // );
-
-  //   // if (!confirmed) {
-  //   //   console.log("reject-call");
-  //   //   socket.emit("reject-call", {
-  //   //     from: data.socket
-  //   //   });
-
-  //   //   return;
-  //   // }
-  //   doSomething(data);
-  //   return;
-  // }
+  console.log("call-made")
+  if (getCalled) {
+    console.log("vao day roi122222")
+    confirmAnser(data);
+    return;
+  }
+  console.log("vao day roi23")
+  openStream()
+    .then(stream => {
+      localVideoStream = stream;
+      const localVideo = document.getElementById("local-video");
+      if (localVideo) {
+        localVideo.srcObject = stream;
+      }
+  
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+      answerUser(data)
+  });
+  
   
 });
 
 socket.on("CANDIDATE_SENT", async data => {
-  console.log('CANDIDATE_SENT RE')
+  // console.log('CANDIDATE_SENT Nhan ve')
   
   const candidate = data.candidate
-  console.log(candidate)
+  // console.log(candidate)
   await peerConnection.addIceCandidate(candidate);
 });
 socket.on("answer-made", async data => {
+  console.log("answer-made")
   await peerConnection.setRemoteDescription(
     new RTCSessionDescription(data.answer)
   );
@@ -187,7 +189,7 @@ function openStream(){
 //     console.warn(error.message);
 //   }
 // );
-function showConfirm(data){
+function confirmAnser(data){
   document.getElementById('id_confrmdiv').style.display="block"; //this is the replace of this line  
   document.getElementById('id_truebtn').onclick = function(){
      //do your delete operation
