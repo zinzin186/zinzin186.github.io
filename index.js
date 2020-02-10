@@ -1,6 +1,7 @@
 let isAlreadyCalling = false;
 let getCalled = false;
 var localVideoStream = null
+var isReadyToAnswer = false
 const existingCalls = [];
 
 const { RTCPeerConnection, RTCSessionDescription } = window;
@@ -42,6 +43,7 @@ function createUserItemContainer(socketId) {
     userContainerEl.setAttribute("class", "active-user active-user--selected");
     const talkingWithInfo = document.getElementById("talking-with-info");
     talkingWithInfo.innerHTML = `Talking with: "Socket: ${socketId}"`;
+    console.log("click vao user de goi")
     callUser(socketId);
     });
   });
@@ -52,7 +54,8 @@ function createUserItemContainer(socketId) {
 async function callUser(socketId) {
   
   const offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
+  const off = new RTCSessionDescription(offer);
+  await peerConnection.setLocalDescription(off);
   peerConnection.onicecandidate = function(icecandidate) {
     console.log("CANDIDATE_SENT111")
     const candidate = icecandidate.candidate
@@ -62,12 +65,11 @@ async function callUser(socketId) {
         candidate,
         to: socketId
       });
-      
     };
-    
   };
+  console.log('call-user')
   socket.emit("call-user", {
-    sdp: offer,
+    sdp: off,
     to: socketId
   });
 }
@@ -91,7 +93,6 @@ function updateUserList(socketIds) {
     const alreadyExistingUser = document.getElementById(socketId);
     if (!alreadyExistingUser) {
       const userContainerEl = createUserItemContainer(socketId);
-
       activeUserContainer.appendChild(userContainerEl);
     }
   });
@@ -112,25 +113,34 @@ socket.on("remove-user", ({ socketId }) => {
 });
 
 socket.on("call-made", async data => {
-  console.log("call-made")
-  if (getCalled) {
-    console.log("vao day roi122222")
+  if (!getCalled){
+    console.log("Show confirm")
     confirmAnser(data);
-    return;
+    return
   }
-  console.log("vao day roi23")
-  openStream()
-    .then(stream => {
-      localVideoStream = stream;
-      const localVideo = document.getElementById("local-video");
-      if (localVideo) {
-        localVideo.srcObject = stream;
-      }
-  
-      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-      answerUser(data)
+  console.log("Do not show confirm")
+  await peerConnection.setRemoteDescription(
+    new RTCSessionDescription(data.offer)
+  );
+  const answer = await peerConnection.createAnswer();
+  const ans = new RTCSessionDescription(answer);
+  await peerConnection.setLocalDescription(ans);
+  peerConnection.onicecandidate = function(icecandidate) {
+    if (!icecandidate || !icecandidate.candidate) return;
+    const candidate = icecandidate.candidate
+    console.log('send candidate')
+    socket.emit("SEND_CANDIDATE", {
+      candidate,
+      to: data.socket
+    });
+    
+  };
+  console.log("make-answer")
+  socket.emit("make-answer", {
+    sdp: ans,
+    to: data.socket
   });
-  
+  getCalled = true;
   
 });
 
@@ -143,11 +153,12 @@ socket.on("CANDIDATE_SENT", async data => {
 });
 socket.on("answer-made", async data => {
   console.log("answer-made")
+  console.log(data)
   await peerConnection.setRemoteDescription(
     new RTCSessionDescription(data.answer)
   );
-
   if (!isAlreadyCalling) {
+    console.log("isAlreadyCalling")
     callUser(data.socket);
     isAlreadyCalling = true;
   }
@@ -175,20 +186,6 @@ function openStream(){
   const config = {audio: true, video: true};
   return navigator.mediaDevices.getUserMedia(config);
 }
-// navigator.getUserMedia(
-//   { video: true, audio: true },
-//   stream => {
-//     const localVideo = document.getElementById("local-video");
-//     if (localVideo) {
-//       localVideo.srcObject = stream;
-//     }
-
-//     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-//   },
-//   error => {
-//     console.warn(error.message);
-//   }
-// );
 function confirmAnser(data){
   document.getElementById('id_confrmdiv').style.display="block"; //this is the replace of this line  
   document.getElementById('id_truebtn').onclick = function(){
@@ -201,9 +198,9 @@ function confirmAnser(data){
       if (localVideo) {
         localVideo.srcObject = stream;
       }
-  
       stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
       answerUser(data)
+      getCalled = true
   });
   };
   
