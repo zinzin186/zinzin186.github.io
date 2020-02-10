@@ -30,11 +30,20 @@ function createUserItemContainer(socketId) {
   userContainerEl.appendChild(usernameEl);
 
   userContainerEl.addEventListener("click", () => {
-    unselectUsersFromList();
+    openStream()
+    .then(stream => {
+      const localVideo = document.getElementById("local-video");
+      if (localVideo) {
+        localVideo.srcObject = stream;
+      }
+  
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+      unselectUsersFromList();
     userContainerEl.setAttribute("class", "active-user active-user--selected");
     const talkingWithInfo = document.getElementById("talking-with-info");
     talkingWithInfo.innerHTML = `Talking with: "Socket: ${socketId}"`;
     callUser(socketId);
+    });
   });
 
   return userContainerEl;
@@ -149,18 +158,21 @@ peerConnection.ontrack = function({ streams: [stream] }) {
     remoteVideo.srcObject = stream;
   }
 };
+function openStream(){
+  const config = {audio: true, video: true};
+  return navigator.mediaDevices.getUserMedia(config);
+}
+// navigator.getUserMedia(
+//   { video: true, audio: true },
+//   stream => {
+//     const localVideo = document.getElementById("local-video");
+//     if (localVideo) {
+//       localVideo.srcObject = stream;
+//     }
 
-navigator.getUserMedia(
-  { video: true, audio: true },
-  stream => {
-    const localVideo = document.getElementById("local-video");
-    if (localVideo) {
-      localVideo.srcObject = stream;
-    }
-
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-  },
-  error => {
-    console.warn(error.message);
-  }
-);
+//     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+//   },
+//   error => {
+//     console.warn(error.message);
+//   }
+// );
