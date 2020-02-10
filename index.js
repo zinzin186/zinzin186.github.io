@@ -101,21 +101,21 @@ socket.on("remove-user", ({ socketId }) => {
 });
 
 socket.on("call-made", async data => {
-  if (getCalled) {
-    console.log("confirmed");
-    const confirmed = confirm(
-      `User "Socket: ${data.socket}" wants to call you. Do accept this call?`
-    );
+//   if (getCalled) {
+//     console.log("confirmed");
+//     const confirmed = confirm(
+//       `User "Socket: ${data.socket}" wants to call you. Do accept this call?`
+//     );
 
-    if (!confirmed) {
-      console.log("reject-call");
-      socket.emit("reject-call", {
-        from: data.socket
-      });
+//     if (!confirmed) {
+//       console.log("reject-call");
+//       socket.emit("reject-call", {
+//         from: data.socket
+//       });
 
-      return;
-    }
-  }
+//       return;
+//     }
+//   }
 
   await peerConnection.setRemoteDescription(
     new RTCSessionDescription(data.offer)
