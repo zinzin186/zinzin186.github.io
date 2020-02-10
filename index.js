@@ -1,6 +1,6 @@
 let isAlreadyCalling = false;
 let getCalled = false;
-
+var localVideoStream = null
 const existingCalls = [];
 
 const { RTCPeerConnection, RTCSessionDescription } = window;
@@ -55,7 +55,6 @@ async function callUser(socketId) {
   await peerConnection.setLocalDescription(new RTCSessionDescription(offer));
   peerConnection.onicecandidate = function(icecandidate) {
     console.log("CANDIDATE_SENT111")
-    
     const candidate = icecandidate.candidate
     console.log(candidate)
     if (candidate){
@@ -72,7 +71,19 @@ async function callUser(socketId) {
     to: socketId
   });
 }
-
+async function answerUser(data) {
+  await peerConnection.setRemoteDescription(
+    new RTCSessionDescription(data.offer)
+  );
+  const answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
+  console.log("answer data")
+  socket.emit("make-answer", {
+    sdp: answer,
+    to: data.socket
+  });
+  getCalled = true;
+}
 function updateUserList(socketIds) {
   const activeUserContainer = document.getElementById("active-user-container");
 
@@ -101,45 +112,40 @@ socket.on("remove-user", ({ socketId }) => {
 });
 
 socket.on("call-made", async data => {
-//   if (getCalled) {
-//     console.log("confirmed");
-//     const confirmed = confirm(
-//       `User "Socket: ${data.socket}" wants to call you. Do accept this call?`
-//     );
+  doSomething(data);
+  // if (getCalled) {
+  //   // console.log("confirmed");
+  //   // const confirmed = confirm(
+  //   //   `User "Socket: ${data.socket}" wants to call you. Do accept this call?`
+  //   // );
 
-//     if (!confirmed) {
-//       console.log("reject-call");
-//       socket.emit("reject-call", {
-//         from: data.socket
-//       });
+  //   // if (!confirmed) {
+  //   //   console.log("reject-call");
+  //   //   socket.emit("reject-call", {
+  //   //     from: data.socket
+  //   //   });
 
-//       return;
-//     }
-//   }
+  //   //   return;
+  //   // }
+  //   doSomething(data);
+  //   return;
+  // }
 
-//   openStream()
-//     .then(stream => {
-//       const localVideo = document.getElementById("local-video");
-//       if (localVideo) {
-//         localVideo.srcObject = stream;
-//       }
+  // openStream()
+  //   .then(stream => {
+  //     localVideoStream = stream;
+  //     const localVideo = document.getElementById("local-video");
+  //     if (localVideo) {
+  //       localVideo.srcObject = stream;
+  //     }
   
-//       stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-//       await peerConnection.setRemoteDescription(
-//     new RTCSessionDescription(data.offer)
-//   );
-  const answer = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(new RTCSessionDescription(answer));
-  console.log("answer data")
-  socket.emit("make-answer", {
-    sdp: answer,
-    to: data.socket
-  });
-  getCalled = true;
-    });
+  //     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+  //     answerUser(data)
+  // });
   
   
 });
+
 socket.on("CANDIDATE_SENT", async data => {
   console.log('CANDIDATE_SENT Nhan ve')
   
@@ -161,6 +167,13 @@ socket.on("answer-made", async data => {
 socket.on("call-rejected", data => {
   alert(`User: "Socket: ${data.socket}" rejected your call.`);
   unselectUsersFromList();
+  peerConnection.close();
+  if (localVideoStream) {
+    localVideoStream.getTracks().forEach(function (track) {
+      track.stop();
+    });
+    localVideo.srcObject = "";
+  }
 });
 
 peerConnection.ontrack = function({ streams: [stream] }) {
@@ -173,17 +186,50 @@ function openStream(){
   const config = {audio: true, video: true};
   return navigator.mediaDevices.getUserMedia(config);
 }
-navigator.getUserMedia(
-  { video: true, audio: true },
-  stream => {
-    const localVideo = document.getElementById("local-video");
-    if (localVideo) {
-      localVideo.srcObject = stream;
-    }
+// navigator.getUserMedia(
+//   { video: true, audio: true },
+//   stream => {
+//     const localVideo = document.getElementById("local-video");
+//     if (localVideo) {
+//       localVideo.srcObject = stream;
+//     }
 
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-  },
-  error => {
-    console.warn(error.message);
+//     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+//   },
+//   error => {
+//     console.warn(error.message);
+//   }
+// );
+function doSomething(data){
+  document.getElementById('id_confrmdiv').style.display="block"; //this is the replace of this line  
+  document.getElementById('id_truebtn').onclick = function(){
+     //do your delete operation
+     document.getElementById('id_confrmdiv').style.display="none";
+     openStream()
+    .then(stream => {
+      localVideoStream = stream;
+      const localVideo = document.getElementById("local-video");
+      if (localVideo) {
+        localVideo.srcObject = stream;
+      }
+  
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+      answerUser(data)
+  });
+  };
+  
+  document.getElementById('id_falsebtn').onclick = function(){
+      document.getElementById('id_confrmdiv').style.display="none";
+      socket.emit("reject-call", {
+        from: data.socket
+      });
+      unselectUsersFromList();
+  peerConnection.close();
+  if (localVideoStream) {
+    localVideoStream.getTracks().forEach(function (track) {
+      track.stop();
+    });
+    localVideo.srcObject = "";
   }
-);
+  };
+}
