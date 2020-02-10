@@ -33,6 +33,7 @@ function createUserItemContainer(socketId) {
   userContainerEl.addEventListener("click", () => {
     openStream()
     .then(stream => {
+      localVideoStream = stream;
       const localVideo = document.getElementById("local-video");
       if (localVideo) {
         localVideo.srcObject = stream;
