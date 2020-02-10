@@ -117,7 +117,15 @@ socket.on("call-made", async data => {
 //     }
 //   }
 
-  await peerConnection.setRemoteDescription(
+  openStream()
+    .then(stream => {
+      const localVideo = document.getElementById("local-video");
+      if (localVideo) {
+        localVideo.srcObject = stream;
+      }
+  
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+      await peerConnection.setRemoteDescription(
     new RTCSessionDescription(data.offer)
   );
   const answer = await peerConnection.createAnswer();
@@ -128,6 +136,9 @@ socket.on("call-made", async data => {
     to: data.socket
   });
   getCalled = true;
+    });
+  
+  
 });
 socket.on("CANDIDATE_SENT", async data => {
   console.log('CANDIDATE_SENT Nhan ve')
