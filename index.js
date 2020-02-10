@@ -112,7 +112,7 @@ socket.on("remove-user", ({ socketId }) => {
 });
 
 socket.on("call-made", async data => {
-  doSomething(data);
+  showConfirm(data);
   // if (getCalled) {
   //   // console.log("confirmed");
   //   // const confirmed = confirm(
@@ -130,24 +130,11 @@ socket.on("call-made", async data => {
   //   doSomething(data);
   //   return;
   // }
-
-  // openStream()
-  //   .then(stream => {
-  //     localVideoStream = stream;
-  //     const localVideo = document.getElementById("local-video");
-  //     if (localVideo) {
-  //       localVideo.srcObject = stream;
-  //     }
-  
-  //     stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-  //     answerUser(data)
-  // });
-  
   
 });
 
 socket.on("CANDIDATE_SENT", async data => {
-  console.log('CANDIDATE_SENT Nhan ve')
+  console.log('CANDIDATE_SENT RE')
   
   const candidate = data.candidate
   console.log(candidate)
@@ -200,7 +187,7 @@ function openStream(){
 //     console.warn(error.message);
 //   }
 // );
-function doSomething(data){
+function showConfirm(data){
   document.getElementById('id_confrmdiv').style.display="block"; //this is the replace of this line  
   document.getElementById('id_truebtn').onclick = function(){
      //do your delete operation
